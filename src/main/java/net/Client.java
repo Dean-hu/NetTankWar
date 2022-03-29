@@ -6,6 +6,7 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import tank.TankFrame;
 
 import java.awt.*;
 
@@ -48,18 +49,22 @@ class ClientChannelInitializer extends ChannelInitializer<SocketChannel> {
     @Override
     protected void initChannel(SocketChannel socketChannel) throws Exception {
            ChannelPipeline pl=socketChannel.pipeline();
+                 pl.addLast(new MsgDecoder())
+                   .addLast(new MsgEncoder())
+                   .addLast(new ClientHandler());
     }
 }
 class ClientHandler   extends  SimpleChannelInboundHandler<Msg>{
 
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, Msg msg) throws Exception {
-        System.out.println(msg.toString());
+           msg.handle();
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-
+        System.out.println("new tank");
+        ctx.writeAndFlush(new TankJoinMsg(TankFrame.INSTANCE.getMyTank()));
     }
 }
 

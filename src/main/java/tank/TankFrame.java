@@ -2,6 +2,7 @@ package tank;
 
 import lombok.Getter;
 import lombok.Setter;
+import net.*;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -17,7 +18,6 @@ public class TankFrame extends Frame {
     List<Bullet>   bullets=new ArrayList<Bullet>();
     Map<UUID,Tank> tanks=new HashMap<>();
     Random r=new Random();
-    Tank MyTank=new Tank(r.nextInt(800),r.nextInt(800),Direction.U,this);
 
     private TankFrame() {
         setSize(GAME_WIDTH, GAME_HEIGHT);
@@ -32,6 +32,8 @@ public class TankFrame extends Frame {
         });
         this.addKeyListener(new MyKeyListener());
     }
+
+    Tank MyTank = new Tank(r.nextInt(800), r.nextInt(800), Direction.U);
 
     Image offScreenImage = null;
     @Override
@@ -55,7 +57,7 @@ public class TankFrame extends Frame {
         g.drawString("tanks:" + tanks.size(), 10, 80);
         g.drawString("explodes" + explodes.size(), 10, 100);
         g.setColor(c);
-//        MyTank.paint(g);
+        MyTank.paint(g);
         for (int i = 0; i < bullets.size(); i++) {
             bullets.get(i).paint(g);
         }
@@ -72,9 +74,13 @@ public class TankFrame extends Frame {
                 bullets.get(i).collideWith(t);
         }
     }
-
-
-
+    public Bullet findBulletByUUID(UUID id){
+        for (int i = 0; i < bullets.size(); i++) {
+            if(bullets.get(i).getId()==id)
+                return  bullets.get(i);
+        }
+        return null;
+    }
     private class MyKeyListener extends KeyAdapter {
         boolean bL = false;
         boolean bU = false;
@@ -131,11 +137,13 @@ public class TankFrame extends Frame {
         }
 
         private void setMainTankDri() {
-            if (!bL && !bR && !bU && !bD)
+            Direction d = MyTank.getDir();
+            if (!bL && !bR && !bU && !bD) {
                 MyTank.setMoving(false);
+               Client.INSTANCE.send(new TankStopMovingMsg(MyTank));
+            }
             else {
-                MyTank.setMoving(true);
-                Direction d = MyTank.getDir();
+
                 if (bL) MyTank.setDir(Direction.L);
                 if (bR) MyTank.setDir(Direction.R);
                 if (bU) MyTank.setDir(Direction.U);
@@ -145,6 +153,12 @@ public class TankFrame extends Frame {
                 if (bU && bL) MyTank.setDir(Direction.LU);
                 if (bD && bR) MyTank.setDir(Direction.RD);
                 if (bU && bR) MyTank.setDir(Direction.RU);
+                if(!MyTank.isMoving()){
+                    Client.INSTANCE.send(new TankStartMovingMsg(MyTank));
+                }
+                MyTank.setMoving(true);
+                if(d!=MyTank.getDir())
+                    Client.INSTANCE.send(new TankDriChangedMsg(MyTank));
             }
         }
 

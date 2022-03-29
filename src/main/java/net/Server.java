@@ -25,7 +25,10 @@ public class Server {
                      .childHandler(new ChannelInitializer<SocketChannel>() {
                          @Override
                          protected void initChannel(SocketChannel ch) throws Exception {
-                                  ch.pipeline().addLast(new ServerChildHandle());
+                                  ch.pipeline()
+                                          .addLast(new MsgEncoder())
+                                          .addLast(new MsgDecoder())
+                                          .addLast(new ServerChildHandle());
                          }
                      })
                      .bind(8888)

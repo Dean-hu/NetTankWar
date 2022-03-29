@@ -10,6 +10,9 @@ import java.nio.charset.StandardCharsets;
 public class TankMain {
     public static void main(String[] args) {
       TankFrame tf= TankFrame.INSTANCE;
+
+      new Thread(()->new Audio("audio/war1.wav").loop()).start();
+
       new Thread(()->{
          while(true){
              try {
@@ -20,5 +23,7 @@ public class TankMain {
              tf.repaint();
          }
       }).start();
+
+      Client.INSTANCE.connect();
     }
 }

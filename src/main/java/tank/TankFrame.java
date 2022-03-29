@@ -2,6 +2,7 @@ package tank;
 
 import lombok.Getter;
 import lombok.Setter;
+import net.*;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -12,13 +13,17 @@ import java.util.List;
 public class TankFrame extends Frame {
     public static TankFrame INSTANCE = new TankFrame();
     static final int GAME_WIDTH = 1000, GAME_HEIGHT = 800;
-
+    static List<Wall> walls=new ArrayList<>();
     List<Explode> explodes=new ArrayList<Explode>();
     List<Bullet>   bullets=new ArrayList<Bullet>();
     Map<UUID,Tank> tanks=new HashMap<>();
     Random r=new Random();
-    Tank MyTank=new Tank(r.nextInt(800),r.nextInt(800),Direction.U,this);
-
+    static {
+        for(int i=0;i<30;i++) {
+            walls.add(new Wall(100, 100 + i * Wall.HEIGHT));
+            walls.add(new Wall(300, 100 + i * Wall.HEIGHT));
+        }
+    }
     private TankFrame() {
         setSize(GAME_WIDTH, GAME_HEIGHT);
         setVisible(true);
@@ -32,6 +37,8 @@ public class TankFrame extends Frame {
         });
         this.addKeyListener(new MyKeyListener());
     }
+
+    Tank MyTank = new Tank(r.nextInt(800), r.nextInt(800), Direction.U);
 
     Image offScreenImage = null;
     @Override
@@ -55,13 +62,15 @@ public class TankFrame extends Frame {
         g.drawString("tanks:" + tanks.size(), 10, 80);
         g.drawString("explodes" + explodes.size(), 10, 100);
         g.setColor(c);
-//        MyTank.paint(g);
+        MyTank.paint(g);
         for (int i = 0; i < bullets.size(); i++) {
             bullets.get(i).paint(g);
         }
         //java8 stream api
         tanks.values().stream().forEach((e)->e.paint(g));
-
+        for (int i = 0; i < walls.size(); i++) {
+            walls.get(i).paint(g);
+        }
         for (int i = 0; i < explodes.size(); i++) {
             explodes.get(i).paint(g);
         }
@@ -71,10 +80,38 @@ public class TankFrame extends Frame {
             for(Tank t : values )
                 bullets.get(i).collideWith(t);
         }
+        //坦克之间不可重叠
+        for(Tank t : values){
+             t.collideWith(MyTank);
+        }
+        for(Tank t1: values)
+        for(Tank t2 : values){
+            if(t1!=t2)
+               t1.collideWith(t2);
+        }
+        //坦克不可穿越墙壁
+        for (int i = 0; i < walls.size(); i++) {
+            for(Tank t: values){
+                 walls.get(i).collideWithTank(t);
+            }
+        }
+        for (int i = 0; i < walls.size(); i++) {
+                walls.get(i).collideWithTank(MyTank);
+            }
+        //子弹可在墙壁之间反射
+        for (int i = 0; i < walls.size(); i++) {
+            for (int b = 0; b < bullets.size(); b++) {
+                 walls.get(i).collideWithBullet(bullets.get(b));
+            }
+        }
     }
-
-
-
+    public Bullet findBulletByUUID(UUID id){
+        for (int i = 0; i < bullets.size(); i++) {
+            if(bullets.get(i).getId()==id)
+                return  bullets.get(i);
+        }
+        return null;
+    }
     private class MyKeyListener extends KeyAdapter {
         boolean bL = false;
         boolean bU = false;
@@ -131,11 +168,12 @@ public class TankFrame extends Frame {
         }
 
         private void setMainTankDri() {
-            if (!bL && !bR && !bU && !bD)
+            Direction d = MyTank.getDir();
+            if (!bL && !bR && !bU && !bD) {
                 MyTank.setMoving(false);
+               Client.INSTANCE.send(new TankStopMovingMsg(MyTank));
+            }
             else {
-                MyTank.setMoving(true);
-                Direction d = MyTank.getDir();
                 if (bL) MyTank.setDir(Direction.L);
                 if (bR) MyTank.setDir(Direction.R);
                 if (bU) MyTank.setDir(Direction.U);
@@ -145,6 +183,12 @@ public class TankFrame extends Frame {
                 if (bU && bL) MyTank.setDir(Direction.LU);
                 if (bD && bR) MyTank.setDir(Direction.RD);
                 if (bU && bR) MyTank.setDir(Direction.RU);
+                if(!MyTank.isMoving()){
+                    Client.INSTANCE.send(new TankStartMovingMsg(MyTank));
+                }
+                MyTank.setMoving(true);
+                if(d!=MyTank.getDir())
+                    Client.INSTANCE.send(new TankDriChangedMsg(MyTank));
             }
         }
 

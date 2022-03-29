@@ -12,7 +12,7 @@ public class ResourceMgr {
 	                            bulletLU,bulletLD,bulletRU,bulletRD;
 
 	public static BufferedImage[] explodes = new BufferedImage[16];
-	
+	public static BufferedImage[] squares =new BufferedImage[7];
  	
 	static {
 		try {
@@ -33,9 +33,13 @@ public class ResourceMgr {
 			bulletRU = ImageUtil.rotateImage(bulletU, 45);
 			bulletLD = ImageUtil.rotateImage(bulletU, -135);
 			bulletRD = ImageUtil.rotateImage(bulletU, 135);
-			
+
+
 			for(int i=0; i<16; i++) 
 				explodes[i] = ImageIO.read(ResourceMgr.class.getClassLoader().getResourceAsStream("images/e" + (i+1) + ".gif"));
+
+			for(int i=0; i<7; i++)
+				squares[i] = ImageIO.read(ResourceMgr.class.getClassLoader().getResourceAsStream("images/square" + i + ".jpg"));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

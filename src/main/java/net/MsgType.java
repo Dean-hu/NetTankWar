@@ -1,5 +1,6 @@
 package net;
 
 public enum MsgType {
-      TankJoin,TankDriChanged,TankDie,TankStartMoving,TankStopMoving,BulletNew;
+      TankJoin,TankDriChanged,TankDie,ExplodeNew,
+      TankStartMoving,TankStopMoving,BulletNew;
 }
